@@ -1,14 +1,11 @@
-const Discord = require('discord.js');
-const ayarlar = require('../ayarlar.json');
-
-var prefix = ayarlar.prefix;
-
-module.exports = client => {
-   client.user.setStatus('dnd') 
-   client.user.setActivity(`${prefix}yardım |  | ${client.guilds.cache.size} Sunucu`);
-   console.log(`[ BOT HAZIR ] - [ SUNUCULAR - ${client.guilds.cache.size} ] - [ KULLANICILAR - ${client.guilds.cache
-          .reduce((a, b) => a + b.memberCount, 0)
-          .toLocaleString()} ]`)
-     
-
-};
+const Discord = require('discord.js')
+const config = require('../config.json')
+module.exports = {
+  execute: async(client, db) => {
+   
+    console.log(`${client.user.tag} Ready bruh`)
+ 
+    client.user.setActivity(`${config.prefix}help | ${client.guilds.size} Servers | ${client.users.size} Peoples`, { type: "WATCHING" }) 
+    
+  } 
+}

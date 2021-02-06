@@ -1,59 +1,123 @@
-const ayarlar = require('../ayarlar.json');
-const db = require('quick.db')
 const Discord = require('discord.js')
-const sure = 2.5
-const beklememesaji = `**Bu Komutu Kullanabilmek İçin \`${sure}\` Saniye Kadar Beklemelisin!!**` //Komut bekleme mesaj?
-const sahipbeklemesi = false //Sahip bekleme ayar? (false=kapal?, true=aç?k)
-let yazma = new Set();
-module.exports = async message => {
 
-const args = message.content
-    .slice(ayarlar.prefix.length)
-    .trim()
-    .split(/ +/g);  
-  let client = message.client;
-  if (message.author.bot) return;
-  if (!message.content.startsWith(ayarlar.prefix)) return;
-  let command = args.shift().toLowerCase();
-if (command.length === 0) return;
-  let params = message.content.split(' ').slice(1);
-  let perms = client.elevation(message);
-  let cmd;
-  if (client.commands.has(command)) {
-    cmd = client.commands.get(command);
-    if (yazma.has(message.author.id)) {
-      return message.channel.send(beklememesaji);
-    }
-  } else if (client.aliases.has(command)) {
-    if (yazma.has(message.author.id)) {
-      return message.channel.send(beklememesaji);
-    }
-    cmd = client.commands.get(client.aliases.get(command));
-  }
-  if (cmd) {
+const { get } = require('../constructors/sqlite.js') 
 
-    if(cmd.help.name !== "cevaplama") {
-     let kanalengel = await db.fetch(`kanalengel_${message.guild.id}`);
-      if(kanalengel) {
-     if(kanalengel && kanalengel.some(kanalid => `k${message.channel.id}` === kanalid)) return;
-      }
- }
-    if (perms < cmd.conf.permLevel) return;
-    if(sahipbeklemesi === false) {
-      yazma.add(message.author.id);
-    } if(sahipbeklemesi === true) {
-      if(message.author.id === ayarlar.sahip) {
-        cmd.run(client, message, params, perms);
-        return true;
-      }
-    }
-    setTimeout(() => {
-      if(yazma.has(message.author.id)) {
-        yazma.delete(message.author.id);
-      }
-    }, sure * 1000);
-    cmd.run(client, message, params, perms);
-  }
+const freecoins = require('../events/coins.js')
 
+const ms = require('ms')
 
-};
+const parse = require('parse-ms')
+
+const config = require('../config.json')
+
+module.exports = {
+
+  execute: async(client, message, prefix, db) => {
+
+       prefix = (await db.fetch(`prefix_${message.guild.id}`)) || config.prefix;
+
+    if (message.author.bot || message.channel.type === "dm") return
+
+    
+
+    //freecoins.execute(client, message, db)
+
+    
+
+    let args = message.content
+
+      .slice(prefix.length)
+
+      .trim()
+
+      .split(/ +/g);
+
+    let x = args.shift().toLowerCase();
+
+    if (!message.content.startsWith(prefix) || !x) return;
+
+    
+
+    let command = client.commands.get(x) || client.commands.find(cmd => cmd.aliases && cmd.aliases.includes(x))
+
+    
+
+    if (!command) return
+
+    
+
+    let time = Date.now() - message.author.createdTimestamp
+
+    
+
+    if (time < 604800000) {
+
+      let text = []
+
+      time = Date.now() - message.author.createdTimestamp
+
+      console.log(time) 
+
+      time = 604800000 - time 
+
+      Object.entries(parse(time)).map((x, y) => {
+
+        if (x[1] > 0 && y < 4) text.push(`**${x[1]} ${x[0]}**`) 
+
+      })
+
+      
+
+      return message.channel.send({
+
+        embed: {
+
+          color: 16711680,
+
+          title: `Sorry, ${message.author.username}.`,
+
+          description: "I can't work for users that are new in discord.",
+
+          fields: [
+
+            {
+
+              name: "You have to wait:",
+
+              value: text.join(", ") 
+
+            } 
+
+          ] 
+
+        }
+
+      }) 
+
+    } 
+
+    //right now, data will be set to 0
+
+    //since it's a lot of work and it's late for me
+
+    let data = await get(message, message.author) 
+
+    
+
+    if (data.banned == true && message.author.id !== "326758437642043393") return message.channel.send(`${message.author.username} you're banned from this bot.`)
+
+    
+
+    try {
+
+    command.execute(client, message, args, data, db) 
+
+    } catch(e) {
+
+      message.channel.send(e.message) 
+
+    } 
+
+  } 
+
+} 
